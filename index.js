@@ -33,8 +33,6 @@ router.get('/', function (request, response) {
     response.json({message: 'hooray!'});
 });
 
-app.use(bodyParser);
-
 app.use('/wikitext', router);
 
 app.listen(app.get('port'), function () {
