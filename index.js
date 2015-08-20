@@ -19,42 +19,48 @@ app.listen(app.get('port'), function () {
     console.log('Node app is running on port', app.get('port'));
 });
 
-var findBlobs = function (db, callback) {
-    var cursor = db.collection('blobs').find();
+var findDocuments = function (db, collectionName, collectionArray, callback) {
+    var cursor = db.collection(collectionName).find();
     cursor.each(function (err, doc) {
-        if (err) {
-            console.log('Error reading from mongodb: ', err);
+        try {
+            if (err) {
+                console.log('Error reading from mongodb: ', err);
+            }
+            if (doc != null) {
+                console.dir(doc);
+                collectionArray.push(doc);
+            } else {
+                callback();
+            }
         }
-        if (doc != null) {
-            console.dir(doc);
-        } else {
+        catch (ex) {
+            console.log(ex);
+        }
+        finally {
             callback();
         }
     });
 };
 
 app.get('/db', function (request, response) {
-    response.send('Reading some data!');
+    //response.send("Reading data...");
 
     var collectionName = 'blobs';
+    var results = [];
 
-    try {
-        mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-            if (err) {
-                console.log('Unable to connect to mongodb: ', err);
-            }
-            else {
-                console.log('Connected to mongodb!');
-                findBlobs(db, function() {
-                    db.close();
-                });
-            }
-        });
-    }
-    catch (ex) {
-        console.log("fsafsadfassdfasgadgha;oeihtogadfb;obihdafog ", ex);
-        throw ex;
-    }
+    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
+        if (err) {
+            console.log('Unable to connect to mongodb: ', err);
+        }
+        else {
+            console.log('Connected to mongodb!');
+            findDocuments(db, collectionName, results, function () {
+                db.close();
+                response.render('pages/db', {results: results});
+            });
+        }
+    });
+
 });
 
 
