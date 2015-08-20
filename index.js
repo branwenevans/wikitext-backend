@@ -36,33 +36,8 @@ var findDocuments = function (db, collectionName, collectionArray, callback) {
         catch (ex) {
             console.log(ex);
         }
-        finally {
-            callback();
-        }
     });
 };
-
-app.get('/db', function (request, response) {
-    //response.send("Reading data...");
-
-    var collectionName = 'blobs';
-    var results = [];
-
-    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-        if (err) {
-            console.log('Unable to connect to mongodb: ', err);
-        }
-        else {
-            console.log('Connected to mongodb!');
-            findDocuments(db, collectionName, results, function () {
-                db.close();
-                response.render('pages/db', {results: results});
-            });
-        }
-    });
-
-});
-
 
 function insertDocuments(collectionName, documentsToInsert) {
     mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
@@ -91,6 +66,26 @@ function insertDocuments(collectionName, documentsToInsert) {
         }
     });
 }
+
+app.get('/db', function (request, response) {
+    var collectionName = 'blobs';
+    var results = [];
+
+    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
+        if (err) {
+            console.log('Unable to connect to mongodb: ', err);
+        }
+        else {
+            console.log('Connected to mongodb!');
+            findDocuments(db, collectionName, results, function () {
+                db.close();
+                response.send(results);
+            });
+        }
+    });
+
+});
+
 
 app.get('/insert', function (request, response) {
     response.send('Inserting some data!');
