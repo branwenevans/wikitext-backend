@@ -1,25 +1,79 @@
 var mongodb = require('mongodb');
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
 
 app.set('port', (process.env.PORT || 5000));
 app.set('mongoUri', (process.env.MONGOLAB_URI));
 
-app.use(express.static(__dirname + '/public'));
+var router = express.Router();
 
-// views is directory for all template files
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');
-
-app.get('/', function (request, response) {
-    response.render('pages/index')
+router.use(function (request, response, next) {
+    console.log('A request is being made:');
+    //validate request here
+    next();
 });
+
+router.route('blobs')
+    .get(function (request, response) {
+        find('blobs', request, response);
+    })
+    .post(function (request, response) {
+        var documents = [{
+            name: request.body.name,
+            body: request.body.body,
+            created: Date.now()
+        }];
+        insert('blobs', request, response, documents);
+    });
+
+
+router.get('/', function (request, response) {
+    response.json({message: 'hooray!'});
+});
+
+app.use('/wikitext', router);
 
 app.listen(app.get('port'), function () {
-    console.log('Node app is running on port', app.get('port'));
+    console.log('Running on port', app.get('port'));
 });
 
-var findDocuments = function (db, collectionName, collectionArray, callback) {
+
+function find(collectionName, request, response) {
+    var results = [];
+    mongodb.MongoClient.connect(mongoUri, function (err, db) {
+        if (err) {
+            console.log('Unable to connect to mongodb: ', err);
+            response.send(err);
+        }
+        else {
+            console.log('Connected to mongodb!');
+            findDocuments(db, collectionName, results, function () {
+                db.close();
+                response.json(results);
+            });
+        }
+    });
+}
+
+function insert(collectionName, request, response, documentsToInsert) {
+    mongodb.MongoClient.connect(mongoUri, function (err, db) {
+        if (err) {
+            console.log('Unable to connect to mongodb: ', err);
+            response.send(err);
+        }
+        else {
+            console.log('Connected to mongodb!');
+            insertDocuments(db, collectionName, documentsToInsert, function () {
+                db.close();
+                response.json({message: 'Blob saved!'});
+            });
+        }
+    });
+}
+
+
+function findDocuments(db, collectionName, collectionArray, callback) {
     var cursor = db.collection(collectionName).find();
     cursor.each(function (err, doc) {
         try {
@@ -37,67 +91,23 @@ var findDocuments = function (db, collectionName, collectionArray, callback) {
             console.log(ex);
         }
     });
-};
+}
 
-function insertDocuments(collectionName, documentsToInsert) {
-    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-        if (err) {
-            console.log('Unable to connect to mongodb: ', err);
+function insertDocuments(db, collectionName, documentsToInsert, callback) {
+    var collection = db.collection(collectionName);
+    collection.insert(documentsToInsert, function (err, result) {
+        try {
+            if (err) {
+                console.log('Error inserting into %s: ', collectionName, err);
+            }
+            else {
+                console.log('Succesfully inserted into %s: ', collectionName, result);
+            }
+            callback();
         }
-        else {
-            console.log('Connected to mongodb!');
-            var collection = db.collection(collectionName);
-            collection.insert(documentsToInsert, function (err, result) {
-                try {
-                    if (err) {
-                        console.log('Error inserting into %s: ', collectionName, err);
-                    }
-                    else {
-                        console.log('Succesfully inserted into %s: ', collectionName, result);
-                    }
-                }
-                catch (ex) {
-                    console.log(ex);
-                }
-                finally {
-                    db.close();
-                }
-            });
+        catch (ex) {
+            console.log(ex);
         }
     });
 }
-
-app.get('/db', function (request, response) {
-    var collectionName = 'blobs';
-    var results = [];
-
-    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-        if (err) {
-            console.log('Unable to connect to mongodb: ', err);
-        }
-        else {
-            console.log('Connected to mongodb!');
-            findDocuments(db, collectionName, results, function () {
-                db.close();
-                response.send(results);
-            });
-        }
-    });
-
-});
-
-
-app.get('/insert', function (request, response) {
-    response.send('Inserting some data!');
-
-    var collectionName = 'blobs';
-
-    var documentsToInsert = [{
-        name: 'testBlob',
-        head: 'Hello Blob',
-        body: 'This is some testing text!!',
-        created: Date.now()
-    }];
-    insertDocuments(collectionName, documentsToInsert);
-});
 
