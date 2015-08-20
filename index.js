@@ -19,7 +19,23 @@ app.listen(app.get('port'), function () {
     console.log('Node app is running on port', app.get('port'));
 });
 
+var findBlobs = function (db, callback) {
+    var cursor = db.collection('blobs').find();
+    cursor.each(function (err, doc) {
+        if (err) {
+            console.log('Error reading from mongodb: ', err);
+        }
+        if (doc != null) {
+            console.dir(doc);
+        } else {
+            callback();
+        }
+    });
+};
+
 app.get('/db', function (request, response) {
+    response.send('Reading some data!');
+
     var collectionName = 'blobs';
 
     try {
@@ -29,34 +45,9 @@ app.get('/db', function (request, response) {
             }
             else {
                 console.log('Connected to mongodb!');
-                var collection = db.collection(collectionName);
-                collection.find({}, callback()).toArray(function (err2, docs) {
-                    if (err2) {
-                        console.log('Error reading from %s: ', collectionName, err2);
-                    }
-                    console.log("Found the following records:");
-                    console.dir(docs);
+                findBlobs(db, function() {
                     db.close();
                 });
-
-                //collection.find({}, function (err, docs) {
-                //    try {
-                //        if (err) {
-                //            console.log('Error querying %s: ', collectionName, err);
-                //        }
-                //        else {
-                //            console.log('Succesfully queried %s: ', collectionName);
-                //            console.log(docs);
-                //        }
-                //    }
-                //    catch (ex) {
-                //        console.log(ex);
-                //    }
-                //    finally {
-                //        db.close();
-                //    }
-                //});
-                console.log("%s contains: ", collectionName, results);
             }
         });
     }
@@ -65,11 +56,6 @@ app.get('/db', function (request, response) {
         throw ex;
     }
 });
-
-function callback() {
-    console.log("Callback - closing db: ", db);
-    db.close();
-}
 
 
 function insertDocuments(collectionName, documentsToInsert) {
