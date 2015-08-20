@@ -3,6 +3,9 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 app.set('port', (process.env.PORT || 5000));
 app.set('mongoUri', (process.env.MONGOLAB_URI));
 
@@ -14,27 +17,25 @@ router.use(function (request, response, next) {
     next();
 });
 
+router.get('/', function (request, response) {
+    response.json({message: 'hooray!'});
+});
+
 router.route('/blobs')
-    .get(function (request, response) {
-        find('blobs', request, response);
-    })
     .post(function (request, response) {
-        console.log(request.headers);
+        console.log(request.body);
         var documents = [{
             name: request.body.name,
             body: request.body.body,
             created: Date.now()
         }];
         insert('blobs', request, response, documents);
+    })
+    .get(function (request, response) {
+        find('blobs', request, response);
     });
 
-
-router.get('/', function (request, response) {
-    response.json({message: 'hooray!'});
-});
-
 app.use('/wikitext', router);
-
 app.listen(app.get('port'), function () {
     console.log('Running on port', app.get('port'));
 });
