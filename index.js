@@ -14,11 +14,12 @@ router.use(function (request, response, next) {
     next();
 });
 
-router.route('blobs')
+router.route('/blobs')
     .get(function (request, response) {
         find('blobs', request, response);
     })
     .post(function (request, response) {
+        console.log(request.headers);
         var documents = [{
             name: request.body.name,
             body: request.body.body,
@@ -32,6 +33,8 @@ router.get('/', function (request, response) {
     response.json({message: 'hooray!'});
 });
 
+app.use(bodyParser);
+
 app.use('/wikitext', router);
 
 app.listen(app.get('port'), function () {
@@ -41,7 +44,7 @@ app.listen(app.get('port'), function () {
 
 function find(collectionName, request, response) {
     var results = [];
-    mongodb.MongoClient.connect(mongoUri, function (err, db) {
+    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
             console.log('Unable to connect to mongodb: ', err);
             response.send(err);
@@ -57,7 +60,7 @@ function find(collectionName, request, response) {
 }
 
 function insert(collectionName, request, response, documentsToInsert) {
-    mongodb.MongoClient.connect(mongoUri, function (err, db) {
+    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
             console.log('Unable to connect to mongodb: ', err);
             response.send(err);
