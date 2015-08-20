@@ -20,51 +20,56 @@ app.listen(app.get('port'), function () {
 });
 
 app.get('/db', function (request, response) {
+    var collectionName = 'blobs';
 
+    try {
+        mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
+            if (err) {
+                console.log('Unable to connect to mongodb: ', err);
+            }
+            else {
+                console.log('Connected to mongodb!');
+                var collection = db.collection(collectionName);
+                collection.find({}, callback()).toArray(function (err2, docs) {
+                    if (err2) {
+                        console.log('Error reading from %s: ', collectionName, err2);
+                    }
+                    console.log("Found the following records:");
+                    console.dir(docs);
+                    db.close();
+                });
 
-    var findDocuments = function (db, callback) {
-        var collection = db.collection('blobs');
-        // Find some documents
-        collection.find({}).toArray(function (err, docs) {
-            assert.equal(err, null);
-            console.log("Found the following records");
-            console.dir(docs);
-            callback(docs);
+                //collection.find({}, function (err, docs) {
+                //    try {
+                //        if (err) {
+                //            console.log('Error querying %s: ', collectionName, err);
+                //        }
+                //        else {
+                //            console.log('Succesfully queried %s: ', collectionName);
+                //            console.log(docs);
+                //        }
+                //    }
+                //    catch (ex) {
+                //        console.log(ex);
+                //    }
+                //    finally {
+                //        db.close();
+                //    }
+                //});
+                console.log("%s contains: ", collectionName, results);
+            }
         });
     }
-
-    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-        if (err) {
-            console.log('Unable to connect to mongodb: ', err);
-        }
-        else {
-            console.log('Connected to mongodb!');
-
-            findDocuments(db, function () {
-                db.close;
-            });
-
-            //collection.find({}, function (err, docs) {
-            //    try {
-            //        if (err) {
-            //            console.log('Error querying %s: ', collectionName, err);
-            //        }
-            //        else {
-            //            console.log('Succesfully queried %s: ', collectionName);
-            //            console.log(docs);
-            //        }
-            //    }
-            //    catch (ex) {
-            //        console.log(ex);
-            //    }
-            //    finally {
-            //        db.close();
-            //    }
-            //});
-            console.log("%s contains: ", collectionName, results);
-        }
-    });
+    catch (ex) {
+        console.log("fsafsadfassdfasgadgha;oeihtogadfb;obihdafog ", ex);
+        throw ex;
+    }
 });
+
+function callback() {
+    console.log("Callback - closing db: ", db);
+    db.close();
+}
 
 
 function insertDocuments(collectionName, documentsToInsert) {
