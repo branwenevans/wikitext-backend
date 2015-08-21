@@ -11,6 +11,7 @@ app.set('mongoUri', (process.env.MONGOLAB_URI));
 
 var router = express.Router();
 
+//middleware route - everything else goes through this first
 router.use(function (request, response, next) {
     console.log('A request is being made:');
     //validate request here
@@ -39,12 +40,21 @@ router.route('/blobs')
 router.route('/blobs/:id')
     .get(function (request, response) {
         var id = request.params.id;
-        console.log("Finding in blobs with id %s", id);
+        console.log("Finding blob with id %s", id);
         find('blobs', response, {_id: mongodb.ObjectID(id)});
+    })
+    .put(function (request, response) {
+        var id = request.params.id;
+        console.log("Updating blob with id %s", id);
+        update('blobs', response, {
+            id: id,
+            name: request.body.name,
+            body: request.body.body
+        })
     })
     .delete(function (request, response) {
         var id = request.params.id;
-        console.log("Removing from blobs with id %s", id);
+        console.log("Removing blob with id %s", id);
         removeById('blobs', response, id);
     });
 
@@ -55,8 +65,17 @@ app.listen(app.get('port'), function () {
 });
 
 
+function update(collectionName, response, params) {
+    console.log("Updating in %s...", collectionName);
+    var results = [];
+
+    performOnCollection(response, findAndUpdate, collectionName, params, results, function callback() {
+        response.json(results);
+    });
+}
+
 function find(collectionName, response, searchParams) {
-    console.log("Finding in %s ", collectionName);
+    console.log("Finding in %s...", collectionName);
     var params = searchParams || {};
     var results = [];
 
@@ -112,6 +131,26 @@ function findDocuments(db, collectionName, searchParams, results, callback) {
             } else {
                 callback();
             }
+        }
+        catch (ex) {
+            console.log(ex);
+        }
+    });
+}
+
+function findAndUpdate(db, collectionName, documentToUpdate, results, callback) {
+    var collection = db.collection(collectionName);
+    collection.findOneAndUpdate({_id: mongodb.ObjectID(documentToUpdate.id)}, {$set: {name: documentToUpdate.name}}, function (err, result) {
+        try {
+            if (err) {
+                console.log('Error updating %s: ', collectionName, err);
+            }
+            else {
+                console.dir(result.value);
+                results.push(result.value);
+                console.log('Succesfully updated %s: ', collectionName, result);
+            }
+            callback();
         }
         catch (ex) {
             console.log(ex);
