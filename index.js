@@ -29,17 +29,17 @@ router.route('/blobs')
             body: request.body.body,
             created: Date.now()
         }];
-        insert('blobs', request, response, documents);
+        insert('blobs', response, documents);
     })
     .get(function (request, response) {
-        find('blobs', request, response);
+        find('blobs', response);
     });
 
 
 router.route('/blobs/:id')
     .get(function (request, response) {
         console.log("Finding in blobs with id %s", request.params.id);
-        find('blobs', request, response, {_id: mongodb.ObjectID(request.params.id)});
+        find('blobs', response, {_id: mongodb.ObjectID(request.params.id)});
     });
 
 
@@ -49,7 +49,7 @@ app.listen(app.get('port'), function () {
 });
 
 
-function find(collectionName, request, response, searchParams) {
+function find(collectionName, response, searchParams) {
     console.log("Finding in %s ", collectionName);
     var params = searchParams || {};
     var results = [];
@@ -68,7 +68,7 @@ function find(collectionName, request, response, searchParams) {
     });
 }
 
-function insert(collectionName, request, response, documentsToInsert) {
+function insert(collectionName, response, documentsToInsert) {
     console.log("Inserting into %s", collectionName);
     mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
