@@ -140,7 +140,7 @@ function findDocuments(db, collectionName, searchParams, results, callback) {
 
 function findAndUpdate(db, collectionName, documentToUpdate, results, callback) {
     var collection = db.collection(collectionName);
-    collection.findOneAndUpdate({_id: mongodb.ObjectID(documentToUpdate.id)}, {$set: {name: documentToUpdate.name}}, function (err, result) {
+    collection.findOneAndUpdate({_id: mongodb.ObjectID(documentToUpdate.id)}, {$set: {name: documentToUpdate.name}, $set: {body: documentToUpdate.body}}, function (err, result) {
         try {
             if (err) {
                 console.log('Error updating %s: ', collectionName, err);
