@@ -53,23 +53,30 @@ function find(collectionName, response, searchParams) {
     console.log("Finding in %s ", collectionName);
     var params = searchParams || {};
     var results = [];
-    mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
-        if (err) {
-            console.log('Unable to connect to mongodb: ', err);
-            response.send(err);
-        }
-        else {
-            console.log('Connected to mongodb!');
-            findDocuments(db, collectionName, results, params, function () {
-                db.close();
-                response.json(results);
-            });
-        }
+
+    performOnCollection(response, findDocuments, collectionName, params, results, function callback() {
+        response.json(results);
     });
 }
 
 function insert(collectionName, response, documentsToInsert) {
     console.log("Inserting into %s", collectionName);
+
+    performOnCollection(response, insertDocuments, collectionName, documentsToInsert, [], function () {
+        response.json({message: 'Blob saved!'});
+    });
+}
+
+function remove(collectionName, response, id) {
+    console.log("Removing from %s", collectionName);
+
+    performOnCollection(response, deleteDocument, collectionName, id, [], function () {
+        response.json({message: 'Blob deleted!'});
+    });
+}
+
+
+function performOnCollection(response, operation, collectionName, params, results, callback) {
     mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
             console.log('Unable to connect to mongodb: ', err);
@@ -77,16 +84,15 @@ function insert(collectionName, response, documentsToInsert) {
         }
         else {
             console.log('Connected to mongodb!');
-            insertDocuments(db, collectionName, documentsToInsert, function () {
+            operation(db, collectionName, params, results, function callbackAndClose() {
+                callback();
                 db.close();
-                response.json({message: 'Blob saved!'});
             });
         }
     });
 }
 
-
-function findDocuments(db, collectionName, collectionArray, searchParams, callback) {
+function findDocuments(db, collectionName, searchParams, results, callback) {
     var params = searchParams || {};
     var cursor = db.collection(collectionName).find(params);
     cursor.each(function (err, doc) {
@@ -96,7 +102,7 @@ function findDocuments(db, collectionName, collectionArray, searchParams, callba
             }
             if (doc != null) {
                 console.dir(doc);
-                collectionArray.push(doc);
+                results.push(doc);
             } else {
                 callback();
             }
@@ -107,7 +113,7 @@ function findDocuments(db, collectionName, collectionArray, searchParams, callba
     });
 }
 
-function insertDocuments(db, collectionName, documentsToInsert, callback) {
+function insertDocuments(db, collectionName, documentsToInsert, results, callback) {
     var collection = db.collection(collectionName);
     collection.insert(documentsToInsert, function (err, result) {
         try {
@@ -122,6 +128,15 @@ function insertDocuments(db, collectionName, documentsToInsert, callback) {
         catch (ex) {
             console.log(ex);
         }
+    });
+}
+
+function deleteDocument(db, collectionName, id, results, callback) {
+    db.collection(collectionName).deleteOne({_id: mongodb.ObjectID(id)}, function (err) {
+        if (err) {
+            console.log('Error deleting from mongodb: ', err);
+        }
+        callback();
     });
 }
 
