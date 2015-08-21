@@ -3,7 +3,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var app = express();
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 app.set('port', (process.env.PORT || 5000));
@@ -35,13 +35,23 @@ router.route('/blobs')
         find('blobs', request, response);
     });
 
+
+router.route('/blobs/:id')
+    .get(function (request, response) {
+        console.log("Finding in blobs with id %s", request.params.id);
+        find('blobs', request, response, {_id: mongodb.ObjectID(request.params.id)});
+    });
+
+
 app.use('/wikitext', router);
 app.listen(app.get('port'), function () {
     console.log('Running on port', app.get('port'));
 });
 
 
-function find(collectionName, request, response) {
+function find(collectionName, request, response, searchParams) {
+    console.log("Finding in %s ", collectionName);
+    var params = searchParams || {};
     var results = [];
     mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
@@ -50,7 +60,7 @@ function find(collectionName, request, response) {
         }
         else {
             console.log('Connected to mongodb!');
-            findDocuments(db, collectionName, results, function () {
+            findDocuments(db, collectionName, results, params, function () {
                 db.close();
                 response.json(results);
             });
@@ -59,6 +69,7 @@ function find(collectionName, request, response) {
 }
 
 function insert(collectionName, request, response, documentsToInsert) {
+    console.log("Inserting into %s", collectionName);
     mongodb.MongoClient.connect(app.get('mongoUri'), function (err, db) {
         if (err) {
             console.log('Unable to connect to mongodb: ', err);
@@ -75,8 +86,9 @@ function insert(collectionName, request, response, documentsToInsert) {
 }
 
 
-function findDocuments(db, collectionName, collectionArray, callback) {
-    var cursor = db.collection(collectionName).find();
+function findDocuments(db, collectionName, collectionArray, searchParams, callback) {
+    var params = searchParams || {};
+    var cursor = db.collection(collectionName).find(params);
     cursor.each(function (err, doc) {
         try {
             if (err) {
