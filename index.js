@@ -38,8 +38,14 @@ router.route('/blobs')
 
 router.route('/blobs/:id')
     .get(function (request, response) {
-        console.log("Finding in blobs with id %s", request.params.id);
-        find('blobs', response, {_id: mongodb.ObjectID(request.params.id)});
+        var id = request.params.id;
+        console.log("Finding in blobs with id %s", id);
+        find('blobs', response, {_id: mongodb.ObjectID(id)});
+    })
+    .delete(function (request, response) {
+        var id = request.params.id;
+        console.log("Removing from blobs with id %s", id);
+        removeById('blobs', response, id);
     });
 
 
@@ -67,7 +73,7 @@ function insert(collectionName, response, documentsToInsert) {
     });
 }
 
-function remove(collectionName, response, id) {
+function removeById(collectionName, response, id) {
     console.log("Removing from %s", collectionName);
 
     performOnCollection(response, deleteDocument, collectionName, id, [], function () {
@@ -132,10 +138,11 @@ function insertDocuments(db, collectionName, documentsToInsert, results, callbac
 }
 
 function deleteDocument(db, collectionName, id, results, callback) {
-    db.collection(collectionName).deleteOne({_id: mongodb.ObjectID(id)}, function (err) {
+    db.collection(collectionName).deleteOne({_id: mongodb.ObjectID(id)}, function (err, result) {
         if (err) {
             console.log('Error deleting from mongodb: ', err);
         }
+        console.log("Deleted %d items from %s", result.deletedCount, collectionName);
         callback();
     });
 }
